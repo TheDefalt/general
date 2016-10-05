@@ -1,5 +1,6 @@
 import socket
 import urllib
+import contextlib
 import sys
 import os
 
@@ -27,3 +28,27 @@ class fingerPrinter(object):
 		self.sniffOpt = not self.servOpt
 		self.iface = iface
 		self.uaDict = self.getAgents()
+	def getAgents(self):
+		print '[*] Building User-agent Dictionary... ',; sys.stdout.flush()
+		if not os.path.isfile('/usr/share/uafp/strings.py'):
+			try:
+				os.makedirs('/usr/share/uafp')
+				urllib.urlretrieve('http://raw.githubusercontent.com/TheDefalt/general/master/uafp/strings.py', '/usr/share/uafp/strings.py')
+				with open('/usr/share/uafp/strings.py') as dictFile:
+					exec dictFile #You may be wondering what code is being executed here. Good on you for being so paranoid! See the URL or filepath above to see it!
+				print '[DONE]'
+				return userAgents
+			except Exception:
+				print '[FAIL]'
+				sys.exit(1)
+		else:
+			try:
+				with open('/usr/share/uafp/strings.py', 'r+') as dictFile, contextlib.closing(urllib.urlopen('http://raw.githubusercontent.com/TheDefalt/general/master/strings.py')) as remoteFile:
+					localVerNum = dictFile.readline()
+					remoteVerNum = remoteFile.readline()
+					if localVerNum != remoteVerNum:
+						dictFile.seek(0)
+						dictFile.write('%s\n' %(remoteVerNum))
+						dictFile.truncate()
+						dictFile.write(remoteFile.read())
+					
