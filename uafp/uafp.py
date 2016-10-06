@@ -25,11 +25,13 @@ except ImportError:
 		sys.exit(1)
 
 class fingerPrinter(object):
-	def __init__(self, servOpt=False, iface='eth0'):
+	def __init__(self, servOpt=False, sniffOpt=True, iface='eth0', target=False, html=False):
 		self.servOpt = servOpt
-		self.sniffOpt = not self.servOpt
+		self.sniffOpt = sniffOpt
 		self.iface = iface
 		self.uaDict = self.getAgents()
+		self.target = target
+		self.html = loadSite(html)
 	def getAgents(self):
 		print '[*] Building User-agent Dictionary... ',; sys.stdout.flush()
 		if not os.path.isfile('/usr/share/uafp/strings.py'):
@@ -60,6 +62,31 @@ class fingerPrinter(object):
 			except Exception:
 				print '[FAIL]'
 				sys.exit(1)
-
-test = fingerPrinter()
-print test.uaDict
+	def loadSite(self, siteFile):
+		if not not siteFile:
+			with open(siteFile, 'r') as file:
+				return file.read()
+		else:
+			return "<html>\n<body>\n<h1>This is a UAFP Demo Site!</h1>\n(This is the default site)\n</body>\n</html>"
+	def parseRequest(self, httpReq):
+		return httpReq.split("User-Agent:")[1].split('\n')[1].strip() #Get only the user-agent string out of an HTTP GET request
+	def serverOperation(self):
+		servSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		servSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		servSock.bind(('0.0.0.0', 80))
+`		s.listen(5)
+		loopStatus = True
+		while loopStatus:
+			conn, addr = s.accept()
+			if not not self.target:
+				if addr[0] == self.target:
+					httpGET = conn.accept(1024)
+					conn.send('HTTP/1.0 200 OK\n')
+					conn.send('Content-Type: text/html\n\n')
+					conn.send(self.html)
+					conn.close()
+					return httpGET
+				else:
+					conn.accept(1024)
+					conn.send('HTTP/1.0 401 Unauthorized\n')
+					conn.close()
