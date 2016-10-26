@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Created-By: Defalt
+Class-Path: /usr/share/jsch/jsch.jar
+Main-Class: sshbrute
